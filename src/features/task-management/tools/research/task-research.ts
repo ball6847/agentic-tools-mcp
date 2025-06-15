@@ -103,7 +103,7 @@ Once your research is complete and findings are stored:
 
 3.  **Determine Next Task:** To see what task (including potentially this one, if it's now unblocked or its priority has increased) is best to work on next, use the \`get_next_task_recommendation\` tool.
     *   Example: \`get_next_task_recommendation({ projectId: "${task.projectId}" })\`
-          }]
+          `}],
         };
 
       } catch (error) {

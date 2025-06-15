@@ -94,7 +94,7 @@ ${createdTasks.map(task =>
     *   Example: \`get_next_task_recommendation({ projectId: "${project.id}" })\`
 
 3.  **Begin Implementation:** After getting a recommendation, you can start working on the suggested task. Remember to update its status using \`update_task\` (e.g., set to 'in-progress').
-          }]
+          `}],
         };
 
       } catch (error) {
