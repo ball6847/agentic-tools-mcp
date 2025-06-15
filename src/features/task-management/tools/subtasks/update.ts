@@ -60,11 +60,11 @@ export function createUpdateSubtaskTool(storage: Storage) {
           };
         }
 
-        if (details !== undefined && details.trim().length > 1000) {
+        if (details !== undefined && details.trim().length > 10000) {
           return {
             content: [{
               type: 'text' as const,
-              text: 'Error: Subtask details must be 1000 characters or less.'
+              text: 'Error: Subtask details must be 10000 characters or less.'
             }],
             isError: true
           };
