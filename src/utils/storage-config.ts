@@ -7,6 +7,12 @@ import { join } from 'path';
 export interface StorageConfig {
   /** Whether to use global user directory instead of project-specific directories */
   useGlobalDirectory: boolean;
+  /** Disable project, task and subtask management features */
+  disableTaskManagement: boolean;
+  /** Disable memory management features */
+  disableMemoryManagement: boolean;
+  /** Disable AI-powered task management features */
+  disableAi: boolean;
 }
 
 /**
@@ -15,12 +21,17 @@ export interface StorageConfig {
 export function parseCommandLineArgs(): StorageConfig {
   const args = process.argv.slice(2);
   const useGlobalDirectory = args.includes('--claude');
-  
+  const disableTaskManagement = args.includes('--disable-task');
+  const disableMemoryManagement = args.includes('--disable-memory');
+  const disableAi = args.includes('--disable-ai');
+
   return {
-    useGlobalDirectory
+    useGlobalDirectory,
+    disableTaskManagement,
+    disableMemoryManagement,
+    disableAi
   };
 }
-
 /**
  * Get the global storage directory path
  * - Windows: C:\Users\{username}\.agentic-tools-mcp\
@@ -42,7 +53,7 @@ export function resolveWorkingDirectory(providedPath: string, config: StorageCon
   if (config.useGlobalDirectory) {
     return getGlobalStorageDirectory();
   }
-  
+
   return providedPath;
 }
 
@@ -51,10 +62,10 @@ export function resolveWorkingDirectory(providedPath: string, config: StorageCon
  */
 export function getWorkingDirectoryDescription(config: StorageConfig): string {
   const baseDescription = 'The full absolute path to the working directory where data is stored. MUST be an absolute path, never relative. Windows: "C:\\Users\\username\\project" or "D:\\projects\\my-app". Unix/Linux/macOS: "/home/username/project" or "/Users/username/project". Do NOT use: ".", "..", "~", "./folder", "../folder" or any relative paths. Ensure the path exists and is accessible before calling this tool.';
-  
+
   if (config.useGlobalDirectory) {
     return baseDescription + ' NOTE: Server started with --claude flag, so this parameter is ignored and a global user directory is used instead.';
   }
-  
+
   return baseDescription + ' NOTE: When server is started with --claude flag, this parameter is ignored and a global user directory is used instead.';
 }
