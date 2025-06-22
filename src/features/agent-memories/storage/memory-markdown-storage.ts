@@ -177,10 +177,54 @@ export class MemoryMarkdownStorage implements MemoryStorage {
   }
 
   /**
-   * Write content to markdown file
+   * Write content to markdown file, adding the title header.
+   * Ensures all markdown files contain H1 headers after any write operation.
    */
-  private async writeContentFile(filePath: string, content: string): Promise<void> {
-    await fs.writeFile(filePath, content, 'utf-8');
+  private async writeContentFile(filePath: string, content: string, title: string): Promise<void> {
+    const contentWithHeader = this.prependTitleHeader(title, content);
+    await fs.writeFile(filePath, contentWithHeader, 'utf-8');
+  }
+
+  /**
+   * Check if content has a valid H1 title header
+   * Tests pattern: /^# .+\n/
+   * Returns true if content starts with valid H1 header
+   */
+  private hasValidTitleHeader(content: string): boolean {
+    if (!content || content.trim() === '') {
+      return false;
+    }
+    
+    // Test for valid H1 header at the start of the document
+    const headerPattern = /^# .+\n/;
+    return headerPattern.test(content);
+  }
+
+  /**
+   * Strip H1 title header from raw content.
+   * Handles cases: no header, header without empty line, header with empty line.
+   */
+  private stripTitleHeader(rawContent: string): string {
+    if (!this.hasValidTitleHeader(rawContent)) {
+      return rawContent;
+    }
+    
+    // Remove H1 header line and optional following empty line
+    // Pattern: /^# .+\n(\n)?/
+    return rawContent.replace(/^# .+\n(\n)?/, '');
+  }
+
+  /**
+   * Prepend H1 title header to content.
+   * Format: `# ${title}\n\n${content}`
+   * Handles empty content case
+   */
+  private prependTitleHeader(title: string, content: string): string {
+    // Handle empty content case
+    if (!content || content.trim() === '') {
+      return `# ${title}\n`;
+    }
+    return `# ${title}\n\n${content}`;
   }
 
   /**
@@ -192,11 +236,20 @@ export class MemoryMarkdownStorage implements MemoryStorage {
   }
 
   /**
-   * Read content from markdown file
+   * Read content from markdown file, stripping the title header if present.
+   * Returns clean content regardless of header presence.
    */
   private async readContentFile(filePath: string): Promise<string> {
     try {
-      return await fs.readFile(filePath, 'utf-8');
+      const rawContent = await fs.readFile(filePath, 'utf-8');
+      
+      if (this.hasValidTitleHeader(rawContent)) {
+        return this.stripTitleHeader(rawContent);
+      }
+      
+      // Return content as-is if no header present
+      // Header will be added on next write operation
+      return rawContent;
     } catch (error) {
       return ''; // Return empty string if file doesn't exist
     }
@@ -276,7 +329,7 @@ export class MemoryMarkdownStorage implements MemoryStorage {
 
     // Write files
     await this.writeMetadataFile(resolvedMetadataPath, metadata);
-    await this.writeContentFile(resolvedContentPath, content);
+    await this.writeContentFile(resolvedContentPath, content, memory.title);
 
     return memory;
   }
@@ -394,7 +447,7 @@ export class MemoryMarkdownStorage implements MemoryStorage {
 
         // Write updated files
         await this.writeMetadataFile(filePaths.metadataPath, metadata);
-        await this.writeContentFile(filePaths.contentPath, content);
+        await this.writeContentFile(filePaths.contentPath, content, updatedMemory.title);
 
         return updatedMemory;
       }
