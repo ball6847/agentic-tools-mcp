@@ -439,6 +439,7 @@ export class MemoryMarkdownStorage implements MemoryStorage {
   async searchMemories(input: SearchMemoryInput): Promise<MemorySearchResult[]> {
     const query = input.query.toLowerCase();
     const limit = input.limit || 10;
+    // TODO: Define these as named constants for better readability and maintainability.
     const threshold = input.threshold || 0.3;
     const results: MemorySearchResult[] = [];
 
@@ -449,23 +450,26 @@ export class MemoryMarkdownStorage implements MemoryStorage {
       let score = 0;
 
       // Title match (higher weight)
+      // TODO: Define these weights as named constants.
       if (metadata.title.toLowerCase().includes(query)) {
         const titleIndex = metadata.title.toLowerCase().indexOf(query);
         score += (1 - titleIndex / metadata.title.length) * 0.8;
       }
 
       // Category match
+      // TODO: Define this weight as a named constant.
       if (metadata.category.toLowerCase().includes(query)) {
         score += 0.2;
       }
 
       if (score > threshold) {
-        // Read content to assemble full memory
+        // TODO: Redundant File Reads: Consider optimizing by reading content only after initial filtering or using a lightweight content preview/index.
         const categoryDir = join(this.memoriesDir, this.sanitizeFileName(metadata.category));
         const contentPath = join(categoryDir, 'markdown', metadata.contentFile);
         const content = await this.readContentFile(contentPath);
 
         // Check content match
+        // TODO: Define this weight as a named constant.
         if (content.toLowerCase().includes(query)) {
           const contentIndex = content.toLowerCase().indexOf(query);
           score += (1 - contentIndex / Math.min(content.length, 1000)) * 0.5;
