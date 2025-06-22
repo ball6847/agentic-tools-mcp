@@ -19,17 +19,21 @@ This MCP server is part of a complete task and memory management ecosystem:
 
 ## Features
 
-### 🎯 Advanced Task Management System
+### 🎯 Advanced Task Management System with Unlimited Hierarchy (v1.8.0)
 - **Projects**: Organize work into distinct projects with descriptions
-- **Enhanced Tasks**: Rich task metadata with dependencies, priority, complexity, status, tags, and time tracking
-- **Simple Subtasks**: Focused implementation tracking with name, details, and completion
-- **Hierarchical Organization**: Projects → Tasks → Subtasks
-- **Intelligent Dependencies**: Task dependency management with validation
-- **Priority & Complexity**: 1-10 scale prioritization and complexity estimation
+- **Unified Task Model**: Single task interface supporting unlimited nesting depth
+- **Unlimited Hierarchy**: Tasks → Subtasks → Sub-subtasks → infinite depth nesting
+- **Rich Features at All Levels**: Every task gets priority, complexity, dependencies, tags, and time tracking
+- **Parent-Child Relationships**: Flexible hierarchy organization with `parentId` field
+- **Level Tracking**: Automatic hierarchy level calculation and visual indicators
+- **Tree Visualization**: Comprehensive hierarchical tree display with unlimited depth
+- **Intelligent Dependencies**: Task dependency management with validation across hierarchy
+- **Priority & Complexity**: 1-10 scale prioritization and complexity estimation at every level
 - **Enhanced Status Tracking**: pending, in-progress, blocked, done status workflow
 - **Tag-Based Organization**: Flexible categorization and filtering
 - **Time Tracking**: Estimated and actual hours for project planning
-- **Progress Tracking**: Monitor completion status at all levels
+- **Automatic Migration**: Seamless upgrade from old 3-level to unlimited depth model
+- **Progress Tracking**: Monitor completion status at all hierarchy levels
 - **Project-Specific Storage**: Each working directory has isolated task data
 - **Git-Trackable**: Task data can be committed alongside your code
 
@@ -50,12 +54,14 @@ This MCP server is part of a complete task and memory management ecosystem:
 - `update_project` - Edit project name/description
 - `delete_project` - Delete project and all associated data
 
-#### Task Management
-- `list_tasks` - View tasks (optionally filtered by project)
-- `create_task` - Create a new task with enhanced metadata (dependencies, priority, complexity, status, tags, time tracking)
-- `get_task` - Get detailed task information
-- `update_task` - Edit task details, metadata, or mark as completed
-- `delete_task` - Delete task and all associated subtasks
+#### Task Management (Unlimited Hierarchy v1.8.0)
+- `list_tasks` - View tasks in hierarchical tree format with unlimited depth visualization
+- `create_task` - Create tasks at any hierarchy level with `parentId` (supports unlimited nesting)
+- `get_task` - Get detailed task information including hierarchy relationships
+- `update_task` - Edit tasks, metadata, or move between hierarchy levels with `parentId`
+- `delete_task` - Delete task and all child tasks recursively
+- `move_task` - Dedicated tool for moving tasks within hierarchy structure
+- `migrate_subtasks` - Automatic migration tool for converting legacy subtasks to unified model
 
 #### Advanced Task Management (AI Agent Tools)
 - `parse_prd` - Parse Product Requirements Documents and automatically generate structured tasks
@@ -65,12 +71,12 @@ This MCP server is part of a complete task and memory management ecosystem:
 - `research_task` - Guide AI agents to perform comprehensive web research with memory integration
 - `generate_research_queries` - Generate intelligent, targeted web search queries for task research
 
-#### Subtask Management
-- `list_subtasks` - View subtasks (filtered by task or project)
-- `create_subtask` - Create a new subtask within a task
-- `get_subtask` - Get detailed subtask information
-- `update_subtask` - Edit subtask details or mark as completed
-- `delete_subtask` - Delete a specific subtask
+#### Legacy Subtask Management (Backward Compatibility)
+- `list_subtasks` - View child tasks (legacy compatibility, now uses unified Task model)
+- `create_subtask` - Create child tasks (legacy compatibility, creates tasks with `parentId`)
+- `get_subtask` - Get task information (legacy compatibility for existing subtasks)
+- `update_subtask` - Edit child tasks (legacy compatibility, uses unified Task operations)
+- `delete_subtask` - Delete child tasks (legacy compatibility, deletes tasks recursively)
 
 #### Agent Memory Management
 - `create_memory` - Store new memories with title and detailed content
@@ -209,7 +215,7 @@ npx -y @pimzino/agentic-tools-mcp --claude
 }
 ```
 
-### Task (Enhanced v1.7.0)
+### Task (Unified Model v1.8.0 - Unlimited Hierarchy)
 ```typescript
 {
   id: string;                    // Unique identifier
@@ -220,7 +226,11 @@ npx -y @pimzino/agentic-tools-mcp --claude
   createdAt: string;             // ISO timestamp
   updatedAt: string;             // ISO timestamp
 
-  // Enhanced metadata fields (v1.7.0)
+  // Unlimited hierarchy fields (v1.8.0)
+  parentId?: string;             // Parent task ID for unlimited nesting (NEW)
+  level?: number;                // Computed hierarchy level (0, 1, 2, etc.) (NEW)
+
+  // Enhanced metadata fields (from v1.7.0)
   dependsOn?: string[];          // Task dependencies (IDs of prerequisite tasks)
   priority?: number;             // Priority level (1-10, where 10 is highest)
   complexity?: number;           // Complexity estimate (1-10, where 10 is most complex)
@@ -231,19 +241,8 @@ npx -y @pimzino/agentic-tools-mcp --claude
 }
 ```
 
-### Subtask
-```typescript
-{
-  id: string;           // Unique identifier
-  name: string;         // Subtask name
-  details: string;      // Enhanced description
-  taskId: string;       // Parent task reference
-  projectId: string;    // Parent project reference
-  completed: boolean;   // Completion status
-  createdAt: string;    // ISO timestamp
-  updatedAt: string;    // ISO timestamp
-}
-```
+### Legacy Subtask (Deprecated in v1.8.0)
+The separate Subtask interface has been replaced by the unified Task model. Legacy subtasks are automatically migrated to tasks with `parentId` field. This ensures unlimited hierarchy depth while maintaining all rich features at every level.
 
 ### Memory
 ```typescript
@@ -438,16 +437,22 @@ src/
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history and release notes.
 
-### Current Version: 1.7.0
+### Current Version: 1.8.0
+- 🚀 **NEW: Unified Task Model**: Single task interface supporting unlimited nesting depth
+- 🚀 **NEW: Unlimited Hierarchy**: Tasks → Subtasks → Sub-subtasks → infinite depth nesting
+- 🚀 **NEW: Automatic Migration**: Seamless upgrade from 3-level to unlimited depth model
+- 🚀 **NEW: Enhanced Tree Display**: Hierarchical visualization with level indicators and unlimited depth
+- 🚀 **NEW: Hierarchy Tools**: `move_task`, `migrate_subtasks` for unlimited depth management
+- ✅ **Rich Features at All Levels**: Every task gets priority, complexity, dependencies, tags, and time tracking
 - ✅ **Enhanced Task Management**: Rich metadata with dependencies, priority, complexity, status, tags, and time tracking
 - ✅ **Advanced AI Agent Tools**: PRD parsing, task recommendations, complexity analysis, progress inference, and research guidance
-- ✅ **Intelligent Task Dependencies**: Dependency validation and workflow management
-- ✅ **Priority & Complexity System**: 1-10 scale prioritization and complexity estimation
+- ✅ **Intelligent Task Dependencies**: Dependency validation and workflow management across hierarchy
+- ✅ **Priority & Complexity System**: 1-10 scale prioritization and complexity estimation at every level
 - ✅ **Enhanced Status Workflow**: pending → in-progress → blocked → done status tracking
 - ✅ **Tag-Based Organization**: Flexible categorization and filtering system
 - ✅ **Time Tracking**: Estimated and actual hours for project planning
 - ✅ **Hybrid Research Integration**: Web research with memory caching for AI agents
-- ✅ **Complete task management system** with hierarchical organization
+- ✅ **Complete task management system** with unlimited hierarchical organization
 - ✅ **Agent memories** with title/content architecture and JSON file storage
 - ✅ **Intelligent multi-field search** with relevance scoring
 - ✅ **Project-specific storage** with comprehensive MCP tools

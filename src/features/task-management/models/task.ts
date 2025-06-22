@@ -1,5 +1,6 @@
 /**
  * Task data model for the task management system
+ * Version 2.0: Unified model supporting unlimited nesting depth
  */
 export interface Task {
   /** Unique identifier for the task */
@@ -10,6 +11,8 @@ export interface Task {
   details: string;
   /** Reference to parent project */
   projectId: string;
+  /** Reference to parent task (null for top-level tasks) */
+  parentId?: string;
   /** Task completion status */
   completed: boolean;
   /** Timestamp when the task was created */
@@ -30,6 +33,8 @@ export interface Task {
   estimatedHours?: number;
   /** Actual time spent in hours */
   actualHours?: number;
+  /** Nesting level for UI optimization (calculated field) */
+  level?: number;
 }
 
 /**
@@ -42,6 +47,8 @@ export interface CreateTaskInput {
   details: string;
   /** Reference to parent project */
   projectId: string;
+  /** Reference to parent task (optional, null for top-level tasks) */
+  parentId?: string;
   /** Task dependencies - IDs of tasks that must be completed before this task */
   dependsOn?: string[];
   /** Task priority level (1-10, where 10 is highest priority) */
@@ -64,6 +71,8 @@ export interface UpdateTaskInput {
   name?: string;
   /** Enhanced task description (optional) */
   details?: string;
+  /** Reference to parent task (optional) */
+  parentId?: string;
   /** Task completion status (optional) */
   completed?: boolean;
   /** Task dependencies - IDs of tasks that must be completed before this task */
@@ -80,4 +89,40 @@ export interface UpdateTaskInput {
   estimatedHours?: number;
   /** Actual time spent in hours */
   actualHours?: number;
+}
+
+/**
+ * Legacy subtask interface for migration compatibility
+ * @deprecated Use Task with parentId instead
+ */
+export interface LegacySubtask {
+  id: string;
+  name: string;
+  details: string;
+  taskId: string;
+  projectId: string;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Task hierarchy helper types
+ */
+export interface TaskHierarchy {
+  task: Task;
+  children: TaskHierarchy[];
+  depth: number;
+}
+
+/**
+ * Task tree traversal result
+ */
+export interface TaskTreeNode {
+  id: string;
+  name: string;
+  parentId?: string;
+  children: string[];
+  depth: number;
+  path: string[];
 }

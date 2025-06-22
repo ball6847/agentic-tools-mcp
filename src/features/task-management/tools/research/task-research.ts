@@ -69,28 +69,29 @@ export function createTaskResearchTool(
           ? generateMemoryStorageInstructions(task, finalResearchAreas)
           : '';
 
-        return {
-          content: [{
-            type: 'text' as const,
-            text: `🔍 **Task Research Guidance for AI Agent**
+        // Build the response text safely
+        let responseText = `🔍 **Task Research Guidance for AI Agent**
 
 **Task to Research:** ${task.name}
 **Task Details:** ${task.details}
 **Priority:** ${task.priority}/10
 **Complexity:** ${task.complexity || 'Not set'}/10
-**Tags:** ${task.tags?.join(', ') || 'None'}
+**Tags:** ${task.tags?.join(', ') || 'None'}`;
 
-${existingKnowledge ? `📚 **Existing Knowledge Found:**
-${existingKnowledge}
+        if (existingKnowledge) {
+          responseText += `\n\n📚 **Existing Knowledge Found:**\n${existingKnowledge}`;
+        }
 
-` : ''}🎯 **Research Areas to Investigate:**
-${finalResearchAreas.map((area: string, index: number) => `${index + 1}. ${area}`).join('\n')}
+        responseText += `\n\n🎯 **Research Areas to Investigate:**\n`;
+        responseText += finalResearchAreas.map((area: string, index: number) => `${index + 1}. ${area}`).join('\n');
 
-${researchGuidance}
+        responseText += `\n\n${researchGuidance}`;
 
-${memoryInstructions}
+        if (memoryInstructions) {
+          responseText += `\n\n${memoryInstructions}`;
+        }
 
-👉 **Your Actions: Post-Research Task Updates & Next Steps**
+        responseText += `\n\n👉 **Your Actions: Post-Research Task Updates & Next Steps**
 
 Once your research is complete and findings are stored:
 
@@ -99,14 +100,19 @@ Once your research is complete and findings are stored:
 
 2.  **Analyze Complexity & Breakdown (If Needed):** If the research suggests the task is significantly more complex than initially thought, it might need to be broken down.
     *   You can use \`analyze_task_complexity\` to get suggestions: \`analyze_task_complexity({ taskId: "${task.id}" })\`
-    *   Alternatively, create subtasks directly using \`create_subtask\`: \`create_subtask({ taskId: "${task.id}", name: "subtask_name", details: "..." })\`
+    *   Alternatively, create nested tasks using \`create_task\` with parentId: \`create_task({ projectId: "${task.projectId}", parentId: "${task.id}", name: "subtask_name", details: "..." })\`
 
 3.  **Determine Next Task:** To see what task (including potentially this one, if it's now unblocked or its priority has increased) is best to work on next, use the \`get_next_task_recommendation\` tool.
-    *   Example: \`get_next_task_recommendation({ projectId: "${task.projectId}" })\`
-          `}],
+    *   Example: \`get_next_task_recommendation({ projectId: "${task.projectId}" })\``;
+
+        return {
+          content: [{
+            type: 'text' as const,
+            text: responseText
+          }]
         };
 
-      } catch (error) {
+      } catch (error: any) {
         return {
           content: [{
             type: 'text' as const,
@@ -242,7 +248,9 @@ function generateResearchGuidance(
   const guidance = depthGuidance[depth as keyof typeof depthGuidance];
 
   return `👉 **Your Action: Perform Web Research**
+
 Now, use your web search capabilities to investigate each of the "Research Areas to Investigate" listed above. Follow the strategy outlined below.
+
 If you need help formulating specific search queries for this task, you can use the \`generate_research_queries\` tool. Example: \`generate_research_queries({ taskId: "${task.id}" })\`
 
 📋 **Research Instructions for AI Agent:**
@@ -283,8 +291,9 @@ ${depth === 'comprehensive' ? '6. **Search for academic papers** or research on 
 /**
  * Generate instructions for storing research findings in memories
  */
-function generateMemoryStorageInstructions(task: Task, researchAreas:string[]): string {
+function generateMemoryStorageInstructions(task: Task, researchAreas: string[]): string {
   return `👉 **Your Action: Store Findings**
+
 After completing your research for each major area, use the \`create_memory\` tool to store a comprehensive summary. This makes the information available for future reference.
 
 💾 **Memory Storage Instructions:**

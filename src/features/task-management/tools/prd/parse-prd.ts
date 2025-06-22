@@ -50,6 +50,7 @@ export function createParsePRDTool(storage: Storage, getWorkingDirectoryDescript
             name: taskData.name,
             details: taskData.details,
             projectId,
+            parentId: taskData.parentId,
             completed: false,
             createdAt: now,
             updatedAt: now,
@@ -72,32 +73,40 @@ export function createParsePRDTool(storage: Storage, getWorkingDirectoryDescript
         // Update dependencies with actual task IDs
         await updateTaskDependencies(storage, createdTasks, taskDependencyMap);
 
-        return {
-          content: [{
-            type: 'text' as const,
-            text: `✅ PRD parsed successfully! Generated ${createdTasks.length} tasks for project "${project.name}".
+        // Build response text safely
+        let responseText = `✅ PRD parsed successfully! Generated ${createdTasks.length} tasks for project "${project.name}".
 
-📋 **Generated Tasks:**
-${createdTasks.map(task =>
-  `• **${task.name}** (Priority: ${task.priority}, Complexity: ${task.complexity || 'N/A'})
+📋 **Generated Tasks:**\n`;
+
+        for (const task of createdTasks) {
+          const levelIndicator = '  '.repeat(task.level || 0) + '→';
+          responseText += `${levelIndicator} **${task.name}** (Priority: ${task.priority}, Complexity: ${task.complexity || 'N/A'})
   ${task.details.substring(0, 100)}${task.details.length > 100 ? '...' : ''}
   Dependencies: ${task.dependsOn?.length ? task.dependsOn.join(', ') : 'None'}
-  Tags: ${task.tags?.join(', ') || 'None'}`
-).join('\n\n')}
+  Tags: ${task.tags?.join(', ') || 'None'}\n\n`;
+        }
 
-👉 **Your Actions: Review Tasks and Determine Next Steps**
+        responseText += `👉 **Your Actions: Review Tasks and Determine Next Steps**
 
 1.  **Review and Refine Generated Tasks:** Carefully examine each task generated from the PRD. If you need to adjust names, details, priorities, complexity, or dependencies, use the \`update_task\` tool.
     *   Example: \`update_task({ id: "task_id_to_update", name: "new_task_name", details: "updated_details", priority: 7 })\`
 
-2.  **Identify Starting Task:** Once you are satisfied with the task definitions, use the \`get_next_task_recommendation\` tool to identify the best task to begin with in this project.
+2.  **Create Nested Tasks:** For complex tasks, you can break them down further using \`create_task\` with parentId.
+    *   Example: \`create_task({ projectId: "${project.id}", parentId: "parent_task_id", name: "subtask_name", details: "subtask_details" })\`
+
+3.  **Identify Starting Task:** Once you are satisfied with the task definitions, use the \`get_next_task_recommendation\` tool to identify the best task to begin with in this project.
     *   Example: \`get_next_task_recommendation({ projectId: "${project.id}" })\`
 
-3.  **Begin Implementation:** After getting a recommendation, you can start working on the suggested task. Remember to update its status using \`update_task\` (e.g., set to 'in-progress').
-          `}],
+4.  **Begin Implementation:** After getting a recommendation, you can start working on the suggested task. Remember to update its status using \`update_task\` (e.g., set to 'in-progress').`;
+
+        return {
+          content: [{
+            type: 'text' as const,
+            text: responseText
+          }]
         };
 
-      } catch (error) {
+      } catch (error: any) {
         return {
           content: [{
             type: 'text' as const,
@@ -151,9 +160,11 @@ async function parsePRDContent(prdContent: string, projectId: string, defaultPri
             // Estimate hours based on complexity and content
             const estimatedHours = estimateHours(complexity, taskName, section);
 
+            const taskDetails = section.substring(0, 500) + (section.length > 500 ? '...' : '');
+
             tasks.push({
               name: taskName.trim(),
-              details: `${section.substring(0, 500)}${section.length > 500 ? '...' : ''}`,
+              details: taskDetails,
               projectId,
               priority: defaultPriority,
               complexity,
