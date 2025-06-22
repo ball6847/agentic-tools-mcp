@@ -187,7 +187,7 @@ export class MemoryMarkdownStorage implements MemoryStorage {
 
   /**
    * Check if content has a valid H1 title header
-   * Tests pattern: /^# .+\n/
+   * Tests first line only, without requiring trailing newline
    * Returns true if content starts with valid H1 header
    */
   private hasValidTitleHeader(content: string): boolean {
@@ -195,9 +195,9 @@ export class MemoryMarkdownStorage implements MemoryStorage {
       return false;
     }
     
-    // Test for valid H1 header at the start of the document
-    const headerPattern = /^# .+\n/;
-    return headerPattern.test(content);
+    // Check first line only, remove newline requirement
+    const firstLine = content.split('\n')[0];
+    return /^# .+/.test(firstLine);
   }
 
   /**
@@ -209,22 +209,20 @@ export class MemoryMarkdownStorage implements MemoryStorage {
       return rawContent;
     }
     
-    // Remove H1 header line and optional following empty line
-    // Pattern: /^# .+\n(\n)?/
-    return rawContent.replace(/^# .+\n(\n)?/, '');
+    const lines = rawContent.split('\n');
+    // Remove first line (header) and optional following empty line
+    const startIndex = (lines.length > 1 && lines[1] === '') ? 2 : 1;
+    return lines.slice(startIndex).join('\n');
   }
 
   /**
    * Prepend H1 title header to content.
    * Format: `# ${title}\n\n${content}`
-   * Handles empty content case
+   * Handles empty content case with consistent double-newline structure
    */
   private prependTitleHeader(title: string, content: string): string {
-    // Handle empty content case
-    if (!content || content.trim() === '') {
-      return `# ${title}\n`;
-    }
-    return `# ${title}\n\n${content}`;
+    const cleanContent = content?.trim() || '';
+    return cleanContent ? `# ${title}\n\n${cleanContent}` : `# ${title}\n\n`;
   }
 
   /**
