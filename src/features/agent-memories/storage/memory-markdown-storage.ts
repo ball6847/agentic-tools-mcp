@@ -194,7 +194,7 @@ export class MemoryMarkdownStorage implements MemoryStorage {
     if (!content || content.trim() === '') {
       return false;
     }
-    
+
     // Check first line only, remove newline requirement
     const firstLine = content.split('\n')[0];
     return /^# .+/.test(firstLine);
@@ -208,7 +208,7 @@ export class MemoryMarkdownStorage implements MemoryStorage {
     if (!this.hasValidTitleHeader(rawContent)) {
       return rawContent;
     }
-    
+
     const lines = rawContent.split('\n');
     // Remove first line (header) and optional following empty line
     const startIndex = (lines.length > 1 && lines[1] === '') ? 2 : 1;
@@ -240,11 +240,11 @@ export class MemoryMarkdownStorage implements MemoryStorage {
   private async readContentFile(filePath: string): Promise<string> {
     try {
       const rawContent = await fs.readFile(filePath, 'utf-8');
-      
+
       if (this.hasValidTitleHeader(rawContent)) {
         return this.stripTitleHeader(rawContent);
       }
-      
+
       // Return content as-is if no header present
       // Header will be added on next write operation
       return rawContent;
