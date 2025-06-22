@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { MemoryFileStorage, MemoryMarkdownStorage, MemoryStorage } from './features/agent-memories/storage';
+import { MemoryFileStorage, MemoryMarkdownStorage, MemoryStorage } from './features/agent-memories/storage/index.js';
 import { FileStorage } from './features/task-management/storage/file-storage.js';
 import { StorageConfig, getWorkingDirectoryDescription, resolveWorkingDirectory } from './utils/storage-config.js';
 import { getVersion } from './utils/version.js';
