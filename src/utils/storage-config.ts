@@ -13,6 +13,8 @@ export interface StorageConfig {
   disableMemoryManagement: boolean;
   /** Disable AI-powered task management features */
   disableAi: boolean;
+  /** Use markdown storage for memories instead of file storage */
+  useMemoryMarkdownStorage: boolean;
 }
 
 /**
@@ -24,12 +26,14 @@ export function parseCommandLineArgs(): StorageConfig {
   const disableTaskManagement = args.includes('--disable-task');
   const disableMemoryManagement = args.includes('--disable-memory');
   const disableAi = args.includes('--disable-ai');
+  const useMemoryMarkdownStorage = args.includes('--memory-markdown-storage');
 
   return {
     useGlobalDirectory,
     disableTaskManagement,
     disableMemoryManagement,
-    disableAi
+    disableAi,
+    useMemoryMarkdownStorage
   };
 }
 /**
