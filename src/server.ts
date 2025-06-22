@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { MemoryStorage } from './features/agent-memories/storage/storage.js';
+import { MemoryFileStorage, MemoryMarkdownStorage, MemoryStorage } from './features/agent-memories/storage';
 import { FileStorage } from './features/task-management/storage/file-storage.js';
 import { StorageConfig, getWorkingDirectoryDescription, resolveWorkingDirectory } from './utils/storage-config.js';
 import { getVersion } from './utils/version.js';
@@ -35,7 +35,6 @@ import { createSearchMemoriesTool } from './features/agent-memories/tools/memori
 import { createUpdateMemoryTool } from './features/agent-memories/tools/memories/update.js';
 
 // Advanced task management tools (TaskMaster-like features)
-import { MemoryMarkdownStorage } from './features/agent-memories/storage/memory-markdown-storage.js';
 import { createComplexityAnalysisTool } from './features/task-management/tools/analysis/complexity-analysis.js';
 import { createProgressInferenceTool } from './features/task-management/tools/analysis/progress-inference.js';
 import { createParsePRDTool } from './features/task-management/tools/prd/parse-prd.js';
@@ -60,7 +59,7 @@ async function createMemoryStorage(workingDirectory: string, config: StorageConf
   const resolvedDirectory = resolveWorkingDirectory(workingDirectory, config);
   const storage = config.useMemoryMarkdownStorage ?
     new MemoryMarkdownStorage(resolvedDirectory) :
-    new FileStorage(resolvedDirectory);
+    new MemoryFileStorage(resolvedDirectory);
   await storage.initialize();
   return storage as MemoryStorage;
 }

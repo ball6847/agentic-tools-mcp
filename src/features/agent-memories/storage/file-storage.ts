@@ -1,14 +1,13 @@
 import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
-import { randomUUID } from 'crypto';
+import { dirname, join } from 'path';
+import { Memory, MemorySearchResult, SearchMemoryInput } from '../models/memory.js';
 import { MemoryStorage } from './storage.js';
-import { Memory, SearchMemoryInput, MemorySearchResult } from '../models/memory.js';
 
 /**
  * File-based storage implementation for agent memories
  * Stores each memory as an individual JSON file organized by category
  */
-export class FileStorage implements MemoryStorage {
+export class MemoryFileStorage implements MemoryStorage {
   private workingDirectory: string;
   private storageDir: string;
   private memoriesDir: string;
