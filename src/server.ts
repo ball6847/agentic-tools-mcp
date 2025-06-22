@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { FileStorage } from './features/task-management/storage/file-storage.js';
-import { FileStorage as MemoryFileStorage } from './features/agent-memories/storage/file-storage.js';
+import { MemoryStorage } from './features/agent-memories/storage/storage.js';
 import { getVersion } from './utils/version.js';
 import { StorageConfig, resolveWorkingDirectory, getWorkingDirectoryDescription } from './utils/storage-config.js';
 import { z } from 'zod';
@@ -55,9 +55,15 @@ async function createStorage(workingDirectory: string, config: StorageConfig): P
 /**
  * Create memory storage instance for a specific working directory
  */
-async function createMemoryStorage(workingDirectory: string, config: StorageConfig): Promise<MemoryFileStorage> {
+async function createMemoryStorage(workingDirectory: string, config: StorageConfig): Promise<MemoryStorage> {
   const resolvedDirectory = resolveWorkingDirectory(workingDirectory, config);
-  const storage = new MemoryFileStorage(resolvedDirectory);
+  
+  // Import the storage factory function
+  const { createMemoryStorage: createStorage } = await import('./features/agent-memories/storage/index.js');
+  
+  // Create storage with the appropriate type based on config
+  const storage = createStorage(resolvedDirectory, config.useMemoryMarkdownStorage);
+  
   await storage.initialize();
   return storage;
 }
@@ -66,7 +72,8 @@ const defaultStorageConfig: StorageConfig = {
   useGlobalDirectory: false,
   disableTaskManagement: false,
   disableMemoryManagement: false,
-  disableAi: false
+  disableAi: false,
+  useMemoryMarkdownStorage: false
 }
 
 /**

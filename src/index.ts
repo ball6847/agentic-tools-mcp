@@ -32,6 +32,13 @@ async function main() {
     } else {
       console.error('📁 Project-specific mode: Using .agentic-tools-mcp/ within each working directory');
     }
+    
+    // Show memory storage type
+    if (storageConfig.useMemoryMarkdownStorage) {
+      console.error('📝 Memory Storage: Using Markdown-based storage for memories');
+    } else {
+      console.error('📄 Memory Storage: Using JSON-based storage for memories');
+    }
     console.error('');
 
     console.error('📋 Task Management features available:');
@@ -42,7 +49,11 @@ async function main() {
     console.error('🧠 Agent Memories features available:');
     console.error('   • Memory Management (create, search, get, list, update, delete)');
     console.error('   • Intelligent multi-field text search with relevance scoring');
-    console.error('   • JSON file storage with title/content architecture');
+    if (storageConfig.useMemoryMarkdownStorage) {
+      console.error('   • Markdown file storage with separate metadata and content files');
+    } else {
+      console.error('   • JSON file storage with title/content architecture');
+    }
     console.error('');
     console.error('💡 Use list_projects to get started with tasks, or create_memory for memories!');
   } catch (error) {

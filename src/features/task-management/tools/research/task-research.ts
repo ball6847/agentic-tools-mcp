@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { Task } from '../../models/task.js';
 import { Storage } from '../../storage/storage.js';
-import { FileStorage as MemoryFileStorage } from '../../../agent-memories/storage/file-storage.js';
+import { MemoryStorage } from '../../../agent-memories/storage/storage.js';
 
 /**
  * Research tool that guides the AI agent to perform web research for tasks
@@ -9,7 +9,7 @@ import { FileStorage as MemoryFileStorage } from '../../../agent-memories/storag
  */
 export function createTaskResearchTool(
   storage: Storage,
-  memoryStorage: MemoryFileStorage,
+  memoryStorage: MemoryStorage,
   getWorkingDirectoryDescription: (config: any) => string,
   config: any
 ) {
@@ -129,7 +129,7 @@ Once your research is complete and findings are stored:
  * Check existing memories for relevant knowledge about the task
  */
 async function checkExistingMemoriesForTask(
-  memoryStorage: MemoryFileStorage,
+  memoryStorage: MemoryStorage,
   task: Task
 ): Promise<string> {
   try {
@@ -149,7 +149,7 @@ async function checkExistingMemoriesForTask(
           limit: 3,
           threshold: 0.3
         });
-        relevantMemories.push(...memories.map(m => `• ${m.memory.title}: ${m.memory.content.substring(0, 200)}...`));
+        relevantMemories.push(...memories.map((m: any) => `• ${m.memory.title}: ${m.memory.content.substring(0, 200)}...`));
       } catch (error) {
         // Continue if search fails
         continue;
