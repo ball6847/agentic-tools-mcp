@@ -16,6 +16,8 @@ export interface Memory {
   updatedAt: string;
   /** Optional categorization of the memory */
   category?: string;
+  /** The file name of the content file */
+  contentFile?: string;
 }
 
 /**
