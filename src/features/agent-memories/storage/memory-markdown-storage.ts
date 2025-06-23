@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import { dirname, join, basename } from 'path';
+import { basename, dirname, join } from 'path';
 import { Memory, MemorySearchResult, SearchMemoryInput } from '../models/memory.js';
 import { MemoryStorage } from './storage.js';
 
@@ -276,6 +276,7 @@ export class MemoryMarkdownStorage implements MemoryStorage {
    * Convert metadata and content back to Memory
    */
   private assembleMemory(metadata: MemoryMetadata, content: string): Memory {
+    this.validateContentFile(metadata.title, metadata.contentFile);
     return {
       id: metadata.id,
       title: metadata.title,
@@ -314,14 +315,14 @@ export class MemoryMarkdownStorage implements MemoryStorage {
       // Reconstruct content path to point to the markdown subdirectory
       const categoryDir = dirname(dirname(contentPath)); // Get category directory from original contentPath
       const markdownDir = join(categoryDir, 'markdown');
-      resolvedContentPath = join(markdownDir, baseName.split('/').pop() + '.md');
+      resolvedContentPath = join(markdownDir, basename(baseName) + '.md');
     } else {
       resolvedContentPath = contentPath;
     }
 
     // Update content file name in metadata if it changed
     if (resolvedContentPath !== contentPath) {
-      const contentFileName = basename(resolvedContentPath) || metadata.contentFile;
+      const contentFileName = basename(resolvedContentPath);
       metadata.contentFile = contentFileName;
     }
 
@@ -355,7 +356,7 @@ export class MemoryMarkdownStorage implements MemoryStorage {
   /**
    * Get all memories with optional filtering
    */
-  async getMemories(agentId?: string, category?: string, limit?: number): Promise<Memory[]> {
+  async getMemories(_agentId?: string, category?: string, limit?: number): Promise<Memory[]> {
     const memories: Memory[] = [];
 
     try {
@@ -410,45 +411,35 @@ export class MemoryMarkdownStorage implements MemoryStorage {
    * Update an existing memory
    */
   async updateMemory(id: string, updates: Partial<Memory>): Promise<Memory | null> {
-    // Find existing files
     const filePaths = await this.findMemoryFiles(id);
     if (!filePaths) return null;
-
     try {
-      // Read current data
       const currentMetadata = await this.readMetadataFile(filePaths.metadataPath);
       const currentContent = await this.readContentFile(filePaths.contentPath);
-
-      // Assemble current memory
       const currentMemory = this.assembleMemory(currentMetadata, currentContent);
-
-      // Apply updates
       const updatedMemory: Memory = {
         ...currentMemory,
         ...updates,
-        id: currentMemory.id, // Ensure ID doesn't change
+        id: currentMemory.id,
         updatedAt: new Date().toISOString(),
       };
+      if (updates.title && updates.title !== currentMemory.title) {
 
-      // Check if title or category changed (requires file moves)
-      const needsMove = updates.title || updates.category;
-
-      if (needsMove) {
-        // Delete old files
-        await this.deleteMemoryFiles(filePaths.metadataPath, filePaths.contentPath);
-
-        // Create new files with updated info
-        return this.createMemory(updatedMemory);
+        const newContentPath = this.getContentFilePath(currentMemory.category || 'general', updates.title);
+        const resolvedNewContentPath = await this.resolveFileNameConflict(newContentPath, '.md');
+        try {
+          await this.atomicFileRename(filePaths.contentPath, resolvedNewContentPath);
+        } catch (error) {
+          throw new Error(`Failed to rename content file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+        const { metadata } = this.disassembleMemory(updatedMemory);
+        await this.writeMetadataFile(filePaths.metadataPath, metadata);
       } else {
-        // Update in place
         const { metadata, content } = this.disassembleMemory(updatedMemory);
-
-        // Write updated files
         await this.writeMetadataFile(filePaths.metadataPath, metadata);
         await this.writeContentFile(filePaths.contentPath, content, updatedMemory.title);
-
-        return updatedMemory;
       }
+      return updatedMemory;
     } catch (error) {
       return null;
     }
@@ -471,13 +462,43 @@ export class MemoryMarkdownStorage implements MemoryStorage {
     }
   }
 
+  private validateContentFile(title: string, contentFile: string): void {
+
+    // Allow contentFile to have numeric suffixes for conflict resolution
+    const baseExpected = this.sanitizeFileName(title);
+    const actualBase = contentFile.replace(/(_\d+)?\.md$/, '');
+
+    if (actualBase !== baseExpected) {
+      console.warn(`ContentFile '${contentFile}' doesn't match title '${title}'. Expected base: '${baseExpected}'`);
+    }
+  }
+
+  private async atomicFileRename(oldPath: string, newPath: string): Promise<void> {
+    try {
+      // Check if target exists to avoid overwriting
+      try {
+        await fs.access(newPath);
+        throw new Error(`Target file already exists: ${newPath}`);
+      } catch (error: any) {
+        // Good - target doesn't exist, we can proceed, or it's a file not found error
+        if (error.code !== 'ENOENT') {
+          throw error;
+        }
+      }
+
+      // Atomic rename
+      await fs.rename(oldPath, newPath);
+    } catch (error: any) {
+      throw new Error(`Failed to rename file from ${oldPath} to ${newPath}: ${error.message}`);
+    }
+  }
+
   /**
-   * Delete both metadata and content files
+   * Delete a memory's associated files (metadata and content).
    */
   private async deleteMemoryFiles(metadataPath: string, contentPath: string): Promise<void> {
     try {
       await fs.unlink(metadataPath);
-      // The contentPath already includes the 'markdown' subdirectory
       await fs.unlink(contentPath);
     } catch (error) {
       throw new Error(`Failed to delete memory files: ${error instanceof Error ? error.message : 'Unknown error'}`);
