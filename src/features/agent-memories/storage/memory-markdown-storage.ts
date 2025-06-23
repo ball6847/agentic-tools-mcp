@@ -60,11 +60,11 @@ export class MemoryMarkdownStorage implements MemoryStorage {
   private sanitizeFileName(title: string): string {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
-      .replace(/\s+/g, '-')         // Replace spaces with hyphens
-      .replace(/-+/g, '-')          // Collapse multiple hyphens
-      .replace(/^-|-$/g, '')        // Remove leading/trailing hyphens
-      .substring(0, 100);           // Limit length
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .substring(0, 100);
   }
 
   /**
@@ -115,14 +115,12 @@ export class MemoryMarkdownStorage implements MemoryStorage {
     while (true) {
       try {
         await fs.access(filePath);
-        // File exists, try next number
         const dir = dirname(basePath);
-        const baseNameWithExt = basePath.substring(dir.length + 1); // Get filename from path
-        const baseName = baseNameWithExt.replace(extension, ''); // Remove extension
+        const baseNameWithExt = basePath.substring(dir.length + 1);
+        const baseName = baseNameWithExt.replace(extension, '');
         filePath = join(dir, `${baseName}_${counter}${extension}`);
         counter++;
       } catch (error) {
-        // File doesn't exist, we can use this path
         break;
       }
     }
@@ -141,22 +139,17 @@ export class MemoryMarkdownStorage implements MemoryStorage {
         if (category.isDirectory()) {
           const categoryPath = join(this.memoriesDir, category.name);
           const files = await fs.readdir(categoryPath);
-
-          // Find JSON metadata files
           const jsonFiles = files.filter(f => f.endsWith('.json'));
-
           for (const jsonFile of jsonFiles) {
             const metadataPath = join(categoryPath, jsonFile);
             try {
               const content = await fs.readFile(metadataPath, 'utf-8');
               const metadata = JSON.parse(content) as MemoryMetadata;
-
               if (metadata.id === id) {
                 const contentPath = join(categoryPath, 'markdown', metadata.contentFile);
                 return { metadataPath, contentPath };
               }
             } catch (error) {
-              // Skip invalid JSON files
               continue;
             }
           }
@@ -292,41 +285,25 @@ export class MemoryMarkdownStorage implements MemoryStorage {
    * Create a new memory
    */
   async createMemory(memory: Memory): Promise<Memory> {
-    // Ensure category directory exists
     await this.ensureCategoryDirectory(memory.category || 'general');
-
-    // Validate title
     this.validateTitle(memory.title);
-
-    // Disassemble memory into metadata and content
     const { metadata, content } = this.disassembleMemory(memory);
-
-    // Generate file paths
     const metadataPath = this.getMetadataFilePath(metadata.category, metadata.title);
     const contentPath = this.getContentFilePath(metadata.category, metadata.title);
-
-    // Handle file name conflicts
     const resolvedMetadataPath = await this.resolveFileNameConflict(metadataPath, '.json');
-
-    // If metadata path changed, adjust content path accordingly
     let resolvedContentPath;
     if (resolvedMetadataPath !== metadataPath) {
       const baseName = resolvedMetadataPath.replace('.json', '');
-      // Reconstruct content path to point to the markdown subdirectory
-      const categoryDir = dirname(dirname(contentPath)); // Get category directory from original contentPath
+      const categoryDir = dirname(dirname(contentPath));
       const markdownDir = join(categoryDir, 'markdown');
       resolvedContentPath = join(markdownDir, basename(baseName) + '.md');
     } else {
       resolvedContentPath = contentPath;
     }
-
-    // Update content file name in metadata if it changed
     if (resolvedContentPath !== contentPath) {
       const contentFileName = basename(resolvedContentPath);
       metadata.contentFile = contentFileName;
     }
-
-    // Write files
     await this.writeMetadataFile(resolvedMetadataPath, metadata);
     await this.writeContentFile(resolvedContentPath, content, memory.title);
 
@@ -337,16 +314,12 @@ export class MemoryMarkdownStorage implements MemoryStorage {
    * Get a specific memory by ID
    */
   async getMemory(id: string): Promise<Memory | null> {
-    // Find files by ID
     const filePaths = await this.findMemoryFiles(id);
     if (!filePaths) return null;
 
     try {
-      // Read metadata and content
       const metadata = await this.readMetadataFile(filePaths.metadataPath);
       const content = await this.readContentFile(filePaths.contentPath);
-
-      // Assemble and return memory
       return this.assembleMemory(metadata, content);
     } catch (error) {
       return null;
@@ -364,37 +337,24 @@ export class MemoryMarkdownStorage implements MemoryStorage {
 
       for (const categoryEntry of categories) {
         if (categoryEntry.isDirectory()) {
-          // Skip if category filter doesn't match
           if (category && categoryEntry.name !== this.sanitizeFileName(category)) {
             continue;
           }
-
           const categoryPath = join(this.memoriesDir, categoryEntry.name);
           const files = await fs.readdir(categoryPath);
-
-          // Find JSON metadata files
           const jsonFiles = files.filter(f => f.endsWith('.json'));
-
           for (const jsonFile of jsonFiles) {
             const metadataPath = join(categoryPath, jsonFile);
             try {
-              // Read metadata
               const metadata = await this.readMetadataFile(metadataPath);
-
-              // Read content
               const contentPath = join(categoryPath, 'markdown', metadata.contentFile);
               const content = await this.readContentFile(contentPath);
-
-              // Assemble memory
               const memory = this.assembleMemory(metadata, content);
               memories.push(memory);
-
-              // Apply limit if specified
               if (limit && memories.length >= limit) {
                 return memories;
               }
             } catch (error) {
-              // Skip invalid files
               continue;
             }
           }
@@ -424,7 +384,6 @@ export class MemoryMarkdownStorage implements MemoryStorage {
         updatedAt: new Date().toISOString(),
       };
       if (updates.title && updates.title !== currentMemory.title) {
-
         const newContentPath = this.getContentFilePath(currentMemory.category || 'general', updates.title);
         const resolvedNewContentPath = await this.resolveFileNameConflict(newContentPath, '.md');
         try {
@@ -449,12 +408,10 @@ export class MemoryMarkdownStorage implements MemoryStorage {
    * Delete a memory
    */
   async deleteMemory(id: string): Promise<boolean> {
-    // Find files by ID
     const filePaths = await this.findMemoryFiles(id);
     if (!filePaths) return false;
 
     try {
-      // Delete both files
       await this.deleteMemoryFiles(filePaths.metadataPath, filePaths.contentPath);
       return true;
     } catch (error) {
@@ -463,8 +420,6 @@ export class MemoryMarkdownStorage implements MemoryStorage {
   }
 
   private validateContentFile(title: string, contentFile: string): void {
-
-    // Allow contentFile to have numeric suffixes for conflict resolution
     const baseExpected = this.sanitizeFileName(title);
     const actualBase = contentFile.replace(/(_\d+)?\.md$/, '');
 
@@ -511,43 +466,32 @@ export class MemoryMarkdownStorage implements MemoryStorage {
   async searchMemories(input: SearchMemoryInput): Promise<MemorySearchResult[]> {
     const query = input.query.toLowerCase();
     const limit = input.limit || 10;
-    // TODO: Define these as named constants for better readability and maintainability.
     const threshold = input.threshold || 0.3;
     const results: MemorySearchResult[] = [];
 
-    // Get all metadata files
     const allMetadata = await this.getAllMetadataFiles(input.category);
 
     for (const metadata of allMetadata) {
       let score = 0;
 
-      // Title match (higher weight)
-      // TODO: Define these weights as named constants.
       if (metadata.title.toLowerCase().includes(query)) {
         const titleIndex = metadata.title.toLowerCase().indexOf(query);
         score += (1 - titleIndex / metadata.title.length) * 0.8;
       }
 
-      // Category match
-      // TODO: Define this weight as a named constant.
       if (metadata.category.toLowerCase().includes(query)) {
         score += 0.2;
       }
 
       if (score > threshold) {
-        // TODO: Redundant File Reads: Consider optimizing by reading content only after initial filtering or using a lightweight content preview/index.
         const categoryDir = join(this.memoriesDir, this.sanitizeFileName(metadata.category));
         const contentPath = join(categoryDir, 'markdown', metadata.contentFile);
         const content = await this.readContentFile(contentPath);
-
-        // Check content match
-        // TODO: Define this weight as a named constant.
         if (content.toLowerCase().includes(query)) {
           const contentIndex = content.toLowerCase().indexOf(query);
           score += (1 - contentIndex / Math.min(content.length, 1000)) * 0.5;
         }
 
-        // Normalize score
         score = Math.min(score, 1);
 
         if (score > threshold) {
@@ -574,32 +518,24 @@ export class MemoryMarkdownStorage implements MemoryStorage {
     const metadata: MemoryMetadata[] = [];
 
     try {
-      // Read category directories
       const categories = await fs.readdir(this.memoriesDir, { withFileTypes: true });
-
       for (const category of categories) {
         if (!category.isDirectory()) continue;
         if (categoryFilter && category.name !== this.sanitizeFileName(categoryFilter)) continue;
-
         const categoryPath = join(this.memoriesDir, category.name);
         const files = await fs.readdir(categoryPath);
-
-        // Find JSON metadata files
         const jsonFiles = files.filter(f => f.endsWith('.json'));
-
         for (const jsonFile of jsonFiles) {
           const filePath = join(categoryPath, jsonFile);
           try {
             const fileMetadata = await this.readMetadataFile(filePath);
             metadata.push(fileMetadata);
           } catch (error) {
-            // Skip invalid files
             continue;
           }
         }
       }
     } catch (error) {
-      // Return empty array on error
     }
 
     return metadata;
@@ -634,11 +570,8 @@ export class MemoryMarkdownStorage implements MemoryStorage {
     let newestMemory: string | undefined;
 
     for (const metadata of allMetadata) {
-      // Count by category
       const category = metadata.category || 'general';
       memoriesByCategory[category] = (memoriesByCategory[category] || 0) + 1;
-
-      // Track oldest and newest
       if (!oldestMemory || metadata.dateCreated < oldestMemory) {
         oldestMemory = metadata.dateCreated;
       }
