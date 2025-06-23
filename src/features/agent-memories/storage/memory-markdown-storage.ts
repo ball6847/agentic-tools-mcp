@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import { dirname, join } from 'path';
+import { dirname, join, basename } from 'path';
 import { Memory, MemorySearchResult, SearchMemoryInput } from '../models/memory.js';
 import { MemoryStorage } from './storage.js';
 
@@ -321,7 +321,7 @@ export class MemoryMarkdownStorage implements MemoryStorage {
 
     // Update content file name in metadata if it changed
     if (resolvedContentPath !== contentPath) {
-      const contentFileName = resolvedContentPath.split('/').pop() || metadata.contentFile;
+      const contentFileName = basename(resolvedContentPath) || metadata.contentFile;
       metadata.contentFile = contentFileName;
     }
 
